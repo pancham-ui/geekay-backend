@@ -21,6 +21,7 @@ const productRoutes = require('./routes/productRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const brandRoutes = require('./routes/brandRoutes');
 const enquiryRoutes = require('./routes/enquiryRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 // ─── Connect to MongoDB ───────────────────────────────────────
 connectDB();
@@ -39,22 +40,13 @@ const corsOptions = {
       process.env.CLIENT_URL,
       'http://localhost:3000',
       'http://localhost:5173',
-      'http://localhost:5500',
-      'http://127.0.0.1:5500',
-      'null', // file:// pages send Origin: null
     ].filter(Boolean);
-
-    // Allow requests with no origin (mobile apps, Postman, curl, file://)
-    if (!origin || origin === 'null' || allowed.includes(origin)) {
-      return callback(null, true);
+    // Allow requests with no origin (mobile apps, Postman, curl)
+    if (!origin || allowed.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS policy: origin ${origin} not allowed`));
     }
-
-    // In development, allow any localhost/127.0.0.1 port for convenience
-    if (process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
-      return callback(null, true);
-    }
-
-    callback(new Error(`CORS policy: origin ${origin} not allowed`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -118,6 +110,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/enquiries', enquiryRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────
 app.use((req, res, next) => {
@@ -148,12 +141,12 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 process.on('unhandledRejection', (err) => {
-  logger.error(`Unhandled Promise Rejection: ${err.message}\n${err.stack}`);
+  logger.error('Unhandled Promise Rejection:', err.message);
   server.close(() => process.exit(1));
 });
 
 process.on('uncaughtException', (err) => {
-  logger.error(`Uncaught Exception: ${err.message}\n${err.stack}`);
+  logger.error('Uncaught Exception:', err.message);
   process.exit(1);
 });
 
